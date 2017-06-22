@@ -340,6 +340,30 @@ test('utf-8 with byte order mark', function (t) {
   }
 })
 
+test('tell() without byte order mark', function (t) {
+  collectPos('test_utf8.csv', verify)
+  function verify (err, pos) {
+    t.false(err, 'no err')
+    t.same(pos[0], 6, 'first row')
+    t.same(pos[1], 12, 'second row')
+    t.same(pos[2], 18, 'third row')
+    t.equal(pos.length, 3, '3 rows')
+    t.end()
+  }
+})
+
+test('tell() with byte order mark', function (t) {
+  collectPos('test_utf8_bom.csv', verify)
+  function verify (err, pos) {
+    t.false(err, 'no err')
+    t.same(pos[0], 9, 'first row')
+    t.same(pos[1], 15, 'second row')
+    t.same(pos[2], 21, 'third row')
+    t.equal(pos.length, 3, '3 rows')
+    t.end()
+  }
+})
+
 // helpers
 
 function fixture (name) {
@@ -357,5 +381,22 @@ function collect (file, opts, cb) {
     })
     .on('error', function (err) { cb(err, lines) })
     .on('end', function () { cb(false, lines) })
+  return parser
+}
+
+function collectPos (file, opts, cb) {
+  if (typeof opts === 'function') return collectPos(file, null, opts)
+  var data = read(fixture(file))
+  var pos = []
+  var parser = csv(opts)
+  data.pipe(parser)
+    .on('headers', function () {
+      pos.push(parser.tell())
+    })
+    .on('data', function () {
+      pos.push(parser.tell())
+    })
+    .on('error', function (err) { cb(err, pos) })
+    .on('end', function () { cb(false, pos) })
   return parser
 }

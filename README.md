@@ -115,6 +115,14 @@ fs.createReadStream('some-csv-file.csv')
 })
 ```
 
+## Methods
+
+The parser has the following methods in addition to those inherited from [`stream.Transform`](https://nodejs.org/api/stream.html#stream_class_stream_transform).
+
+### tell()
+
+Returns the current read position of the parser in bytes.
+
 ## Command line tool
 
 There is also a command line tool available. It will convert csv to line delimited JSON.

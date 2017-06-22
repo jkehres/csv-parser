@@ -39,6 +39,7 @@ var Parser = function (opts) {
   this._empty = this._raw ? new Buffer(0) : ''
   this._Row = null
   this._started = false
+  this._pos = 0
 
   if (this.headers) {
     this._first = false
@@ -48,6 +49,10 @@ var Parser = function (opts) {
 
 inherits(Parser, stream.Transform)
 
+Parser.prototype.tell = function () {
+  return this._pos
+}
+
 Parser.prototype._transform = function (data, enc, cb) {
   if (typeof data === 'string') data = new Buffer(data)
 
@@ -56,7 +61,7 @@ Parser.prototype._transform = function (data, enc, cb) {
 
   // detect byte order mark at start of stream and skip it if present
   if (!this._started && startsWithBom(buf)) {
-    start = this._prevEnd = bom.length
+    start = this._prevEnd = this._pos = bom.length
   }
   this._started = true
 
@@ -120,12 +125,14 @@ Parser.prototype._transform = function (data, enc, cb) {
 
 Parser.prototype._flush = function (cb) {
   if (this._escaped || !this._prev) return cb()
-  this._online(this._prev, this._prevEnd, this._prev.length + 1) // plus since online -1s
+  this._online(this._prev, this._prevEnd, this._prev.length)
   cb()
 }
 
 Parser.prototype._online = function (buf, start, end) {
-  end-- // trim newline
+  this._pos += end - start
+
+  if (buf.length && buf[end - 1] === this.newline) end--
   if (!this.customNewline && buf.length && buf[end - 1] === cr) end--
 
   var comma = this.separator
